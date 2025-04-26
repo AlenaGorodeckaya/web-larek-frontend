@@ -301,9 +301,11 @@ cconstructor(container: HTMLElement, events: EventEmitter)
 - _handleBasketClick: () => void - обработчик корзины.
 
 ## Типы данных
-- **Интерфейс товара**
+
+- **Интерфейсы данных (API)**
 
 ```
+// Данные товара
 interface IProduct {
     id: string; // Идентификатор товара
     title: string; // Название товара
@@ -313,8 +315,9 @@ interface IProduct {
     price: number | null; //Цена товара, null - бесценно
 }
 ```
-- **Интерфейс заказа**
+
 ```
+// Данные заказа для отправки
 interface IOrder { 
     payment: 'online' | 'cash'; // Способ оплаты
     email: string;
@@ -324,41 +327,122 @@ interface IOrder {
     total: number; // Сумма заказа
 }
 ```
-- **Интерфейс результата оформления заказа**
+
 ```
+// Ответ сервера на заказ
 interface IOrderResult {
   id: string;
   total: number;
 }
 ```
-- **Интерфейс данных модального окна**
+
+- **Интерфейсы для модели данных**
+
 ```
-interface IModalData {
-  content: HTMLElement;
+// Товар внутри корзины
+interface ICartItem {
+  product: IProduct;
+  quantity: number;
 }
 ```
-- **Интерфейс действий для карточки**
+
 ```
-interface ICardActions {
-  onClick: (event: MouseEvent) => void;
+// Поля данных заказа
+interface OrderData {
+  payment: string;
+  email: string;
+  phone: string;
+  address: string;
 }
 ```
-- **Интерфейс представления корзины**
+
 ```
-interface IBasketView {
-  items: HTMLElement[];
-  total: number;
-}
-```
-- **Интерфейс ошибок формы**
-```
-interface IFormErrors {
+// Ошибки формы
+interface FormErrors {
   payment?: string;
   email?: string;
   phone?: string;
   address?: string;
 }
 ```
+
+- **Интерфейсы для отображения**
+
+```
+// Модальное окно
+interface IModalData {
+  content: HTMLElement;
+}
+```
+
+```
+// Действия карточки товара
+interface ICardActions {
+  onClick: (event: MouseEvent) => void;
+}
+```
+
+```
+// Представление корзины
+interface IBasketView {
+  items: HTMLElement[];
+  total: number;
+}
+```
+
+```
+// Действия успешного заказа
+interface SuccessActions {
+  onClose: () => void;
+}
+```
+
+- **Интерфейсы базовых классов**
+
+```
+ interface IComponent<T = unknown> {
+  render(data?: Partial<T>): HTMLElement;
+  update(data: Partial<T>): void;
+  destroy(): void;
+}
+```
+
+```
+ interface IEvents {
+  on(event: string, callback: Function): void;
+  off(event: string, callback: Function): void;
+  emit(event: string, payload?: unknown): void;
+}
+```
+
+- **Интерфейс API-клиента**
+
+```
+interface IApiClient {
+  get<T>(url: string): Promise<T>;
+  post<T, R>(url: string, data: T): Promise<R>;
+}
+```
+
+- **Перечисление событий**
+
+```
+// События моделей и интерфейсов
+type AppEvents =
+  | 'products:changed'
+  | 'preview:changed'
+  | 'cart:changed'
+  | 'order:changed'
+  | 'order:validation'
+  | 'order:submit'
+  | 'order:success'
+  | 'order:fail'
+  | 'modal:close'
+  | 'card:add'
+  | 'card:select'
+  | 'basket:open';
+```
+
 ## Структура проекта:
 - src/ — исходные файлы проекта
 - src/components/ — папка с JS компонентами
