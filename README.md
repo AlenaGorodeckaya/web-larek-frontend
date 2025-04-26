@@ -424,25 +424,6 @@ interface IApiClient {
 }
 ```
 
-- **Перечисление событий**
-
-```
-// События моделей и интерфейсов
-type AppEvents =
-  | 'products:changed'
-  | 'preview:changed'
-  | 'cart:changed'
-  | 'order:changed'
-  | 'order:validation'
-  | 'order:submit'
-  | 'order:success'
-  | 'order:fail'
-  | 'modal:close'
-  | 'card:add'
-  | 'card:select'
-  | 'basket:open';
-```
-
 ## Структура проекта:
 - src/ — исходные файлы проекта
 - src/components/ — папка с JS компонентами
@@ -482,6 +463,7 @@ type AppEvents =
 - Обработчик: показывает ошибки в OrderForm.
 
 **События пользовательского интерфейса:**
+
 `card:select` - выбор карточки товара.
 - Генерируется: ProductCard при клике.
 - Обработчик: вызывает ProductData.setPreview().
