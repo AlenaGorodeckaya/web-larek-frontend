@@ -36,11 +36,11 @@ npm run build
 Проект реализован с использованием паттерна MVP (Model-View-Presenter) c элементами EventEmitter для управления событиями.
 
 ### Основные слои архитектуры:
-1. `Model` - отвечает за работу с данными и API
+1. `Model` - отвечает за хранение данных и уведомляет об изменениях через события.
 
 2. `View` - отвечает за отображение данных и взаимодействие с пользователем.
 
-3. `Presenter` - связывает Model и View, обрабатывает логику.
+3. `Presenter` - связывает Model и View, обрабатывает логику, взаимодействует с API.
 
 Взаимодействие между слоями организовано через систему событий `EventEmitter`.
 
@@ -62,7 +62,7 @@ npm run build
 - расширяемую логику (можно добавить авторизацию, повторы запросов).
 
 ## Model (Модели данных)
-Это абстрактный базовый класс, предназначенный для создания моделей данных.  Когда ее состояние меняется (например, обновляются данные, добавляются новые поля и др.), модель инициирует событие, чтобы другие части системы могли отреагировать.
+Это абстрактный базовый класс, предназначенный для создания моделей данных.  Когда ее состояние меняется (например, обновляются данные, добавляются новые поля и др.), модель инициирует событие, чтобы другие части системы могли отреагировать. Модели не взаимодействуют с сервером напрямую. Данные загружаются через `AppPresenter` и передаются в модели.
 
 Принимает:
 - `data` - частичные данные модели (объект типа Partial<T>)
@@ -73,7 +73,6 @@ emitChanges(event: string, payload?: object): void; // Уведомляет об
 ```
 ### `ProductModel` 
 Отвечает за хранение данных товаров и логику работы с ними. Принимает:
-- api - экземпляр API-клиента для работы с сервером;
 - events - экземпляр EventEmitter для инициации событий.
 
 Поля класса:
@@ -90,17 +89,12 @@ emitChanges(event: string, payload?: object): void; // Уведомляет об
 
 Основные методы класса:
 
-`loadProducts(): Promise<void>`
-- загружает список продуктов с сервера;
-- обновляет внутреннее состояние;
-- генерирует событие products:changed.
-
 `setProducts(products: Product[]): void`
-- заполняет массив продуктов новыми данными;
-- генерирует событие products:changed.
+- принимает готовые данные (загруженные через `AppPresenter`);  
+- обновляет массив `_products`;  
+- генерирует событие `products:changed`.  
 
 `getProductById(id: string): Product | undefined`
-
 - возвращает продукт по его ID;
 - если продукт не найден, возвращает undefined.
 
@@ -119,7 +113,7 @@ emitChanges(event: string, payload?: object): void; // Уведомляет об
 
 Поля класса:
 ```
-- private _items: CartItem[] = []; // Товары в корзине
+- private _items: CartItem[] = []; // Товары в корзине (каждый товар в одном экземпляре)`
 - private _total: number = 0; // Общая стоимость
 - private _quantity: number = 0; // Количество товаров
 ```
@@ -133,7 +127,8 @@ emitChanges(event: string, payload?: object): void; // Уведомляет об
 Основные методы класса:
 
 `addItem(product: Product): void`
-- добавляет товар в корзину или увеличивает его количество;
+- проверяет наличие товара в корзине (по `id`);
+- если товар отсутствует — добавляет его в массив `_items` **в одном экземпляре**;
 - пересчитывает итоги;
 - генерирует событие cart:changed.
 
@@ -151,7 +146,7 @@ emitChanges(event: string, payload?: object): void; // Уведомляет об
 - если не найден, возвращает undefined.
 
 `updateItemQuantity(productId: string, quantity: number): void`
-- изменяет количество конкретного товара;
+- изменяет количество товара (если quantity = 0, удаляет его).
 - пересчитывает итоги;
 - генерирует событие cart:changed.
 
@@ -160,7 +155,8 @@ emitChanges(event: string, payload?: object): void; // Уведомляет об
 - вызывается автоматически при изменении корзины.
 
 ### `OrderModel` 
- Отвечает за управление данными заказа.Обрабатывает валидацию и отправку заказа на сервер.
+
+Отвечает за управление данными заказа.Обрабатывает валидацию и отправку заказа на сервер.
 Принимает:
 - events - экземпляр EventEmitter для инициации событий
 
@@ -203,16 +199,10 @@ private _valid: boolean = false;
 `clear(): void`
 - сбрасывает все данные заказа;
 - енерирует событие order:changed.
-
-`submit(): Promise<OrderResult>`
-- отправляет заказ на сервер;
-- возвращает Promise с результатом;
-- генерирует события:
-`order:submit` перед отправкой;
-`order:success` при успехе;
-`order:fail` при ошибке.
+- submit(): OrderData — возвращает данные заказа (без отправки на сервер).
 
 ## View 
+Представления только отображают данные и взаимодействуют с пользователем. Данные хранятся в моделях.
 
 ### `ProductCard`
 Отображает карточку товара с возможностью добавления в корзину.
@@ -230,6 +220,7 @@ constructor(container: HTMLElement, actions?: CardActions)
 
 ### `Modal`
 Управляет отображением и поведением модальных окон в приложении.
+
 Наследование: Component<HTMLElement>
 Конструктор:
 ```
@@ -242,6 +233,18 @@ constructor(container: HTMLElement, events: EventEmitter)
 - _handleEscape: (evt: KeyboardEvent) => void - Обработчик закрытия по ESC;
 - _handleOverlayClick: (evt: MouseEvent) => void - Обработчик клика по оверлею.
 
+### `CartItemView`
+Отображает один элемент корзины. Создается при каждом изменении корзины.
+
+Наследование: Component<CartItem>
+
+Конструктор:
+```
+constructor(container: HTMLElement)
+```
+Методы:
+- update(item: CartItem): void - обновляет отображение элемента.
+
 ### `CartView`
 Управляет отображением корзины покупочек.
 
@@ -252,8 +255,7 @@ constructor(container: HTMLElement, events: EventEmitter)
 constructor(container: HTMLElement, events: EventEmitter)
 ```
 Методы:
-- update(items: CartItem[]): void - обновляет содержимое корзины;
-- _renderItem(item: CartItem): HTMLElement - рендерит один элемент корзины;
+- update(items: CartItem[]): void - обновляет содержимое корзины (создает CartItemView для каждого элемента)
 - _updateTotal(sum: number): void - обновляет общую сумму;
 - _handleSubmit: () => void - обработчик оформления заказа.
 
@@ -269,8 +271,7 @@ constructor(container: HTMLFormElement, events: EventEmitter)
 Методы:
 - set errors(value: FormErrors) - отображает ошибки валидации;
 - set valid(value: boolean) - управляет состоянием кнопки;
-- getData(): OrderData - возвращает данные формы;
-- _handleInputChange: (evt: Event) => void - обработчик изменений.
+- _handleInputChange: (evt: Event) => void - обработчик изменений (отправляет данные в модель).
 
 ### `SuccessView`
 Управляет формой сообщения об успешном заказе.
@@ -300,129 +301,16 @@ cconstructor(container: HTMLElement, events: EventEmitter)
 - set locked(value: boolean) - блокирует страницу;
 - _handleBasketClick: () => void - обработчик корзины.
 
+## Presenter 
+### `AppPresenter`
+Координирует работу моделей и представлений:
+- обрабатывает события от представлений;
+- взаимодействует с API (отправляет запросы, получает данные);
+- обновляет модели данных полученными с сервера данными;
+- управляет состоянием приложения.
+
 ## Типы данных
-
-- **Интерфейсы данных (API)**
-
-```
-// Данные товара
-interface IProduct {
-    id: string; // Идентификатор товара
-    title: string; // Название товара
-    description: string; // Описание товара
-    image: string; // Изображение товара
-    category: string; // Категория товара
-    price: number | null; //Цена товара, null - бесценно
-}
-```
-
-```
-// Данные заказа для отправки
-interface IOrder { 
-    payment: 'online' | 'cash'; // Способ оплаты
-    email: string;
-    phone: string;
-    address: string;
-    items: string[]; // Массив товаров в заказе
-    total: number; // Сумма заказа
-}
-```
-
-```
-// Ответ сервера на заказ
-interface IOrderResult {
-  id: string;
-  total: number;
-}
-```
-
-- **Интерфейсы для модели данных**
-
-```
-// Товар внутри корзины
-interface ICartItem {
-  product: IProduct;
-  quantity: number;
-}
-```
-
-```
-// Поля данных заказа
-interface OrderData {
-  payment: string;
-  email: string;
-  phone: string;
-  address: string;
-}
-```
-
-```
-// Ошибки формы
-interface FormErrors {
-  payment?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-}
-```
-
-- **Интерфейсы для отображения**
-
-```
-// Модальное окно
-interface IModalData {
-  content: HTMLElement;
-}
-```
-
-```
-// Действия карточки товара
-interface ICardActions {
-  onClick: (event: MouseEvent) => void;
-}
-```
-
-```
-// Представление корзины
-interface IBasketView {
-  items: HTMLElement[];
-  total: number;
-}
-```
-
-```
-// Действия успешного заказа
-interface SuccessActions {
-  onClose: () => void;
-}
-```
-
-- **Интерфейсы базовых классов**
-
-```
- interface IComponent<T = unknown> {
-  render(data?: Partial<T>): HTMLElement;
-  update(data: Partial<T>): void;
-  destroy(): void;
-}
-```
-
-```
- interface IEvents {
-  on(event: string, callback: Function): void;
-  off(event: string, callback: Function): void;
-  emit(event: string, payload?: unknown): void;
-}
-```
-
-- **Интерфейс API-клиента**
-
-```
-interface IApiClient {
-  get<T>(url: string): Promise<T>;
-  post<T, R>(url: string, data: T): Promise<R>;
-}
-```
+Все типы и интерфейсы вынесены в отдельный файл `src/types/index.ts`
 
 ## Структура проекта:
 - src/ — исходные файлы проекта
@@ -452,11 +340,11 @@ interface IApiClient {
 
 `cart:changed` - изменение содержимого корзины.
 - Генерируется: CartData при любом изменении корзины.
-- Обработчик: обновляет CartView и счетчик в PageView.
+- Обработчик: создает новые CartItemView, обновляет CartView и счетчик в PageView.
 
 `order:changed` - изменение данных заказа.
 - Генерируется: OrderData при изменении полей формы.
-- Обработчик: обновляет OrderForm.
+- Обработчик: OrderForm отправляет данные в OrderModel через setField().
 
 `order:validation` - результаты валидации заказа.
 - Генерируется: OrderData при проверке данных.
@@ -492,6 +380,6 @@ interface IApiClient {
 5. OrderData валидирует данные и генерирует order:validation.
 6. При успешной валидации активируется кнопка подтверждения.
 7. Пользователь подтверждает заказ и далее генерируется order:submit.
-8. Вызывается OrderData.submit(), отправляются данные на сервер.
+8. AppPresenter отправляет данные на сервер через API.
 9. При успехе генерируется order:success, открывается SuccessView.
 10. Корзина очищается через CartData.clearCart().
