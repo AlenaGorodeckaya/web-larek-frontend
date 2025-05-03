@@ -1,11 +1,7 @@
-// Основные типы данных приложения
-
-
-// Типы для товаров. Категории товаров магазина.
-export type Category = 'софт-скил' | 'другое' | 'дополнительное' | 'кнопка' | 'хард-скил';
+import {Product} from '../components/model/ProductModel'
 
 // Данные товара
-export interface Product {
+export interface IProduct {
     id: string; // Идентификатор товара
     title: string; // Название товара
     description: string; // Описание товара
@@ -14,23 +10,42 @@ export interface Product {
     price: number | null; //Цена товара, null - бесценно
 }
 
-// Типы для корзины
-export interface CartItem {
-  id: string; // Идентификатор товара
-  title: string; // Название товара
-  price: number; // Цена за единицу
-  quantity: number;
+// Типы для товаров. Категории товаров магазина.
+export type Category = 'софт-скил' | 'другое' | 'дополнительное' | 'кнопка' | 'хард-скил';
+
+// Интерфейс данных
+export interface IAppData {
+  order: OrderData | null, // Данные текущего заказа или null, если заказа нет
+  basket: IProduct[] | null, // Товары в корзине или null, если корзина пуста
+  catalog: IProduct[], // Массив товаров в каталоге
+  preview: string | null, // ID товара для предпросмотра или null, если предпросмотр неактивен
+  loading: boolean,
+}
+
+// Интерфейс для данных контактов в заказе (Модальное окно: почта телефон)
+export interface OrderContactFormData  {
+  email: string; // Электронная почта клиента (формат должен быть валидным email)
+  phone: string; // Номер телефона клиента (должен соответствовать валидации телефона)
+}
+
+// Интерфейс для данных в заказе (Модальное окно: тип оплаты адрес)
+export interface OrderDeliveryFormData  {
+  payment: PaymentMethod, // Выбранный способ оплаты
+  address: string, // Адрес доставки
 }
 
 // Типы для заказа. Способ оплаты заказа
-export type PaymentMethod = 'card' | 'cash';
+export type PaymentMethod = 'card' | 'cash' | "";
 
-// Данные для оформления заказа
-export interface OrderData {
-  payment: PaymentMethod; 
-  email: string;
-  phone: string;
-  address: string;
+// Интерфейс, объединяет ошибки email/телефона и доставки в одной структуре.
+export interface OrderFormError extends OrderContactFormData, OrderDeliveryFormData {
+}
+
+// Интерфейс (для типизации данных пользователя)
+export interface OrderData extends OrderFormError{
+  items: string[], // Массив идентификаторов товаров в заказе
+  payment: PaymentMethod; // Способ оплаты пользователя
+  total: number; //Общая сумма заказа
 }
 
 // Результат успешного оформления заказа.
@@ -39,160 +54,75 @@ export interface OrderResult {
   total: number; // Итоговая сумма заказа
 }
 
-// Типы для ошибок формы
-export type FormErrors = Partial<Record<keyof OrderData, string>>;
-
-// Интерфейсы базовых классов
-
-// Интерфейс для системы событий (EventEmitter)
-export interface IEvents {
-  on<T extends object>(event: string, callback: (data: T) => void): void;
-  off<T extends object>(event: string, callback: (data: T) => void): void;
-  emit<T extends object>(event: string, data?: T): void;
+// Интерфейс карты товара 
+export interface ICard {
+  id: string; // Bдентификатор товара
+  title: string; // Название товара
+  category: string; // Категория товара
+  description: string; // Описание товара
+  image: string; // URL изображения товара
+  price: number | null; // Цена товара (может быть null, если цена не указана)
+  selected: boolean; // Флаг, указывающий, выбран ли товар
+  button: string; // Текст кнопки
 }
 
-// Базовый интерфейс для компонентов
-export interface IComponent<T> {
-  render(data?: Partial<T>): HTMLElement;
+// Интерфейс, описывающий элемент корзины (товар в корзине покупок).
+export interface CartItem {
+  title: string; // Название товара
+  price: number; // Цена товара
 }
 
-// Интерфейсы моделей
-
-export interface IProductModel {
-  products: Product[]; // Список всех товаров
-  preview: string | null;
-  setProducts(products: Product[]): void;
-  getProductById(id: string): Product | undefined;
-  setPreview(productId: string): void;
-  clearPreview(): void;
+// Интерфейс странички
+export interface IPage {
+  counter: number; // Счетчик товаров в корзине
+  catalog: HTMLElement[]; // Массив элементов DOM для отображения каталога
+  locked: boolean; // Флаг блокировки интерфейса
 }
 
-export interface ICartModel {
-  items: CartItem[];
-  total: number;
-  quantity: number;
-  addItem(product: Product): void; // Добавление товара в корзину
-  removeItem(productId: string): void; // Удаление товара из корзины
-  clearCart(): void; // Очистка корзины
-  getItem(productId: string): CartItem | undefined;
-  updateItemQuantity(productId: string, quantity: number): void;
+// Интерфейс для обработки кликов по карточке товара
+export interface ICardAction {
+  onClick: (event: MouseEvent) => void;  // Функция-обработчик клика
 }
 
-export interface IOrderModel {
-  data: OrderData;
-  errors: FormErrors;
-  isValid: boolean;
-  setField(field: keyof OrderData, value: string): void;
-  validate(): boolean;
-  validateField(field: keyof OrderData): void;
-  clear(): void;
-  submit(): OrderData;
+// Интерфейс API для работы с товарами и заказами
+export interface IWebLarekAPI {
+  getProductList: () => Promise<IProduct[]>; // Получить список товаров
+  getProductItem: (id: string) => Promise<IProduct>; // Получить конкретный товар
+  orderProducts: (order: OrderData) => Promise<OrderResult>; // Оформить заказ
 }
 
-// Интерфейсы представлений
+// Тип события изменения каталога товаров
+export type CatalogUpdatedEvent = {
+  catalog: Product[];  // Новый массив товаров в каталоге
+};
 
-// Действия для карточки товара
-export interface CardActions {
-  onClick: (event: MouseEvent) => void;
-}
-
-export interface IProductCard {
-  inCart: boolean;
-  update(data: Partial<Product>): void;
-}
-
-export interface IModal {
-  open(): void;
-  close(): void;
-  setContent(content: HTMLElement): void;
-}
-
-export interface ICartItemView {
-  update(item: CartItem): void;
-}
-
+// Интерфейс представления корзины
 export interface ICartView {
-  update(items: CartItem[]): void;
+  items: HTMLElement[]; // Элементы товаров в корзине
+  selected: string[]; // Выбранные товары (по ID)
+  total: number; // Общая сумма
 }
 
-export interface IOrderForm {
-  errors: FormErrors;
-  valid: boolean;
+// Интерфейс состояния формы
+export interface IFormState {
+  valid: boolean; // Валидна ли форма
+  errors: string[]; // Список ошибок валидации
 }
 
-export interface SuccessActions {
-  onClick: () => void;
+// Интерфейс данных модального окна
+export interface IModalData {
+  content: HTMLElement;  // HTML-контент для отображения в модалке
 }
 
-export interface ISuccessView {
-  total: number;
+// Интерфейс данных для "успешного" модального окна (после оформления заказа)
+export interface ISuccessModal {
+  total: number;  // Сумма заказа
 }
 
-export interface IPageView {
-  counter: number;
-  catalog: HTMLElement[];
-  locked: boolean;
+// Интерфейс действий для успешного модального окна
+export interface ISuccessModalActions {
+  onClick: () => void;  // Обработчик клика
 }
 
-// Интерфейс API клиента
-export interface IApiClient {
-  getProductList(): Promise<Product[]>;
-  getProductItem(id: string): Promise<Product>;
-  orderProducts(order: OrderData): Promise<OrderResult>;
-}
-
-// Перечисление событий
-
-export enum AppEvents {
-  // События изменения данных
-  ProductsChanged = 'products:changed',
-  PreviewChanged = 'preview:changed',
-  CartChanged = 'cart:changed',
-  OrderChanged = 'order:changed',
-  OrderValidation = 'order:validation',
-
-  // События пользовательского интерфейса
-  CardSelect = 'card:select',
-  CardAdd = 'card:add',
-  BasketOpen = 'basket:open',
-  OrderSubmit = 'order:submit',
-  ModalClose = 'modal:close',
-  OrderSuccess = 'order:success'
-}
-
-//Интерфейсы для событий
-export interface ProductChangeEvent {
-  products: Product[];
-}
-
-export interface PreviewChangeEvent {
-  id: string | null;
-}
-
-export interface CartChangeEvent {
-  items: CartItem[];
-  total: number;
-  quantity: number;
-}
-
-export interface OrderChangeEvent {
-  field: keyof OrderData;
-  value: string;
-}
-
-export interface OrderValidationEvent {
-  errors: FormErrors;
-  valid: boolean;
-}
-
-export interface CardSelectEvent {
-  id: string;
-}
-
-export interface CardAddEvent {
-  product: Product;
-}
-
-export interface OrderSuccessEvent {
-  order: OrderResult;
-}
+// Тип. Ошибка формы
+export type FormErrors = Partial<Record<keyof OrderData, string>>
