@@ -3,6 +3,7 @@ import { ensureElement } from "../../utils/utils";
 import { ISuccessModal, ISuccessModalActions } from "../../types/index";
 
 export class SuccessView extends Component<ISuccessModal> {
+  
   protected _close: HTMLElement;
   protected _total: HTMLElement;
 

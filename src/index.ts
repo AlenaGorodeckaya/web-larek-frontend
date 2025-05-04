@@ -29,8 +29,3 @@ const modal = new Modal(ensureElement<HTMLElement>('#modal-container'), events);
 
 // Инициализация презентера
 new AppPresenter(events, api, page, modal, templates);
-
-// Получаем продукты с сервера
-api.getProductList()
-    .then((products) => events.emit('products:loaded', products))
-    .catch(err => console.log(err));

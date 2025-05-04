@@ -1,24 +1,16 @@
 import {Component} from "../base/component";
-import {IProduct, ICardAction} from "../../types/index";
 import {ensureElement} from "../../utils/utils";
+import {IProduct, ICardAction} from "../../types/index";
 
 export class ProductCard extends Component<IProduct> {
   protected _title: HTMLElement;
   protected _image?: HTMLImageElement;
   protected _description?: HTMLElement;
   protected _button?: HTMLButtonElement;
-  protected _category?: HTMLElement;
+  protected _categoryElement: HTMLElement;
   protected _price: HTMLElement;
   protected _buttonModal?: HTMLButtonElement;
   
-  private color: { [key: string]: string } = {
-    'софт-скил': '_soft',
-    'хард-скил': '_hard',
-    'кнопка': '_button',
-    'дополнительное': '_additional',
-    'другое': '_other'
-  }
-
   constructor(protected blockName: string, container: HTMLElement, action?: ICardAction) {
     super(container);
 
@@ -27,13 +19,19 @@ export class ProductCard extends Component<IProduct> {
     this._button = container.querySelector(`.${blockName}__button`);
     this._description = container.querySelector(`.${blockName}__description`);
     this._price = ensureElement<HTMLElement>(`.${blockName}__price`, container);
-    this._category = container.querySelector(`.${blockName}__category`);
+    this._categoryElement = ensureElement<HTMLElement>(`.${blockName}__category`, container);
 
     if (action?.onClick) {
       if (this._button) {
-        this._button.addEventListener("click", action.onClick);
+        this._button.addEventListener("click", (e) => {
+          e.stopPropagation();
+          action.onClick(e);
+        });
       } else {
-        container.addEventListener("click", action.onClick);
+        container.addEventListener("click", (e) => {
+          e.stopPropagation();
+          action.onClick(e);
+        });
       }
     }
   }
@@ -84,14 +82,20 @@ export class ProductCard extends Component<IProduct> {
   }
 
   set category(value: string) {
-    this.updateTextContent(this._category, value);
-    const category = this._category.classList[0];
-    this._category.className = '';
-    this._category.classList.add(`${category}`);
-    this._category.classList.add(`${category}${this.color[value]}`)
-  }
-
-  get category() {
-    return this._category.textContent || '';
+    this.updateTextContent(this._categoryElement, value);
+    const baseClass = `${this.blockName}__category`;
+    this._categoryElement.className = baseClass;
+    
+    if (value === 'софт-скил') {
+      this._categoryElement.classList.add(`${baseClass}_soft`);
+    } else if (value === 'хард-скил') {
+      this._categoryElement.classList.add(`${baseClass}_hard`);
+    } else if (value === 'дополнительное') {
+      this._categoryElement.classList.add(`${baseClass}_additional`);
+    } else if (value === 'кнопка') {
+      this._categoryElement.classList.add(`${baseClass}_button`);
+    } else {
+      this._categoryElement.classList.add(`${baseClass}_other`);
+    }
   }
 }

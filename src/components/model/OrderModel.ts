@@ -12,51 +12,60 @@ export class OrderModel extends Model<IAppData> {
   };
   private _errors: FormErrors = {};
 
-//Возвращает текущие данные заказа
   get data(): OrderData {
     return this._order;
   }
 
-// Возвращает ошибки валидации
   get errors(): FormErrors {
     return this._errors;
   }
 
-// Возвращает статус валидации
-  get isValid(): boolean {
-    return Object.keys(this._errors).length === 0;
-  }
-
-// Устанавливает значение поля заказа
   setField(field: keyof OrderData, value: string): void {
     (this._order as any)[field] = value;
-    this.validate();
-    this.emitChanges('order:changed', this._order);
+    this.emitChanges('order:changed', { field, value });
   }
 
-// Валидация данных заказа
-  validate(): boolean {
-    const errors: FormErrors = {};
+  validateDelivery(): boolean {
+    // Полностью сбрасываем ошибки перед проверкой
+    this._errors = {};
+    let hasErrors = false;
 
     if (!this._order.payment) {
-      errors.payment = "Необходимо указать способ оплаты";
+      this._errors.payment = "Выберите способ оплаты";
+      hasErrors = true;
     }
-    if (!this._order.address) {
-      errors.address = "Необходимо указать адрес";
-    }
-    if (!this._order.email) {
-      errors.email = "Необходимо указать email";
-    }
-    if (!this._order.phone) {
-      errors.phone = "Необходимо указать телефон";
+    
+    if (!this._order.address?.trim()) {
+      this._errors.address = "Введите адрес доставки";
+      hasErrors = true;
     }
 
-    this._errors = errors;
-    this.emitChanges('order:validation', this._errors);
-    return this.isValid;
+    return !hasErrors;
   }
 
-// Очищает данные заказа
+  validateContacts(): boolean {
+    this._errors = {};
+    let hasErrors = false;
+
+    if (!this._order.email) {
+      this._errors.email = "Необходимо указать email";
+      hasErrors = true;
+    } else if (!/^\S+@\S+\.\S+$/.test(this._order.email)) {
+      this._errors.email = "Некорректный email";
+      hasErrors = true;
+    }
+    
+    if (!this._order.phone) {
+      this._errors.phone = "Необходимо указать телефон";
+      hasErrors = true;
+    } else if (!/^(\+7|8)[\d\s-]{10,}$/.test(this._order.phone)) {
+      this._errors.phone = "Некорректный телефон";
+      hasErrors = true;
+    }
+
+    return !hasErrors;
+  }
+
   clear(): void {
     this._order = {
       email: "",
@@ -67,11 +76,10 @@ export class OrderModel extends Model<IAppData> {
       total: 0,
     };
     this._errors = {};
-    this.emitChanges('order:changed');
+    this.emitChanges('order:cleared');
   }
 
-// Подготавливает данные для отправки заказа
-  submit(): OrderData {
-    return this._order;
+  setItems(items: string[]): void {
+    this._order.items = items;
   }
 }

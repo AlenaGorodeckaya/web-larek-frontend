@@ -13,10 +13,10 @@ export class ProductModel extends Model<IAppData> {
   private _preview: string | null = null;
 
 // Устанавливает каталог товаров
-  setProducts(products: IProduct[]) {
-    this._products = products.map(item => new Product(item, this.events));
-    this.emitChanges('products:changed', this._products);
-  }
+setProducts(products: IProduct[]) {
+  this._products = products;
+  this.emitChanges('items:changed');
+}
 
 // Устанавливает товар для превью
   setPreview(product: IProduct) {

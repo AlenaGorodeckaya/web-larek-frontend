@@ -30,13 +30,13 @@ export class CartView extends Component<ICartView> {
 
     set items(items: HTMLElement[]) {
         if (items.length) {
-            this._list.replaceChildren(...items);
-            this.changeDisabledState(this._button, false);
+          this._list.replaceChildren(...items);
+          this.changeDisabledState(this._button, false);
         } else {
-            this._list.replaceChildren(createElement<HTMLParagraphElement>('p', {
-                textContent: 'Корзина пуста'
-            }));
-            this.changeDisabledState(this._button, true);
+          this._list.replaceChildren(createElement<HTMLParagraphElement>('p', {
+            textContent: 'Корзина пуста'
+          }));
+          this.changeDisabledState(this._button, true);
         }
     }
 
@@ -77,6 +77,6 @@ export class CartItemView extends Component<CartItem> {
     }
 
     set price(value: number) {
-        this.updateTextContent(this._price, value);
+        this.updateTextContent(this._price, `${value} синапсов`);
     }
 }

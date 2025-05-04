@@ -8,7 +8,9 @@ export class CartModel extends Model<IAppData> {
 
 //Обновляет состояние корзины и вызывает соответствующие события.
     private updateCartState() {
+      this.calculateTotals();
       this.emitChanges('cart:changed', this._items);
+      this.emitChanges('counter:changed'); 
     }
 
 // Возвращает текущее содержимое корзины.

@@ -30,7 +30,7 @@ export class Modal extends Component<IModalData> {
 
   close() {
     this.containerElement.classList.remove('modal_active');
-    this.content = null;
+    this._content.innerHTML = ''; 
     this.events.emit('modal:close');
   }
 

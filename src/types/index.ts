@@ -37,6 +37,7 @@ export interface OrderDeliveryFormData  {
 // Типы для заказа. Способ оплаты заказа
 export type PaymentMethod = 'card' | 'cash' | "";
 
+
 // Интерфейс, объединяет ошибки email/телефона и доставки в одной структуре.
 export interface OrderFormError extends OrderContactFormData, OrderDeliveryFormData {
 }
@@ -106,7 +107,7 @@ export interface ICartView {
 // Интерфейс состояния формы
 export interface IFormState {
   valid: boolean; // Валидна ли форма
-  errors: string[]; // Список ошибок валидации
+  errors: string;
 }
 
 // Интерфейс данных модального окна
@@ -125,4 +126,4 @@ export interface ISuccessModalActions {
 }
 
 // Тип. Ошибка формы
-export type FormErrors = Partial<Record<keyof OrderData, string>>
+export type FormErrors = Partial<Record<keyof OrderData, string>>;

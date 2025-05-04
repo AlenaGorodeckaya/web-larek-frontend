@@ -1,7 +1,9 @@
 import { Component } from "../base/component";
-import { IFormState, OrderDeliveryFormData, OrderContactFormData } from "../../types/index";
+import { IFormState, OrderDeliveryFormData, OrderContactFormData, PaymentMethod } from "../../types/index";
 import { ensureElement } from "../../utils/utils";
 import { IEvents } from "../base/events";
+import { OrderModel } from "../model/OrderModel";
+
 
 class Form<T> extends Component<IFormState> {
     protected _submit: HTMLButtonElement;
@@ -50,44 +52,96 @@ class Form<T> extends Component<IFormState> {
 }
 
 export class OrderAddress extends Form<OrderDeliveryFormData> {
-    protected _payment: HTMLDivElement;
-    protected _button: HTMLButtonElement[];
+    protected _paymentButtons: HTMLButtonElement[];
+    protected _submitButton: HTMLButtonElement;
+    protected _errors: HTMLElement;
+    protected _addressInput: HTMLInputElement;
 
     constructor(container: HTMLFormElement, events: IEvents) {
         super(container, events);
+        
+        this._paymentButtons = Array.from(
+            this.container.querySelectorAll('.button_alt')
+        );
+        this._submitButton = ensureElement<HTMLButtonElement>('.order__button', container);
+        this._errors = ensureElement<HTMLElement>('.form__errors', container);
+        this._addressInput = ensureElement<HTMLInputElement>('input[name="address"]', container);
 
-        this._payment = this.container.querySelector<HTMLDivElement>('.order__buttons')!;
-        this._button = [...this._payment.querySelectorAll<HTMLButtonElement>('.button_alt')];
+        this._errors.textContent = '';
+        this._submitButton.disabled = true;
 
-        this._payment.addEventListener('click', (e: MouseEvent) => {
-            const target = e.target as HTMLButtonElement;
-            this.updatePaymentMethod(target.name)
-            events.emit(`order.payment:change`, {target: target.name}) 
-        })
-    }
+        this._paymentButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                this.selectPaymentMethod(button.name as PaymentMethod);
+                events.emit(`${this.container.name}.payment:change`, {
+                    field: 'payment',
+                    value: button.name
+                });
+            });
+        });
 
-    updatePaymentMethod(selectedMethod: string): void {
-        this._button.forEach((btn) => {
-            const isActive = btn.name === selectedMethod;
-            this.modifyClass(btn, 'button_alt-active', isActive);
+        this._addressInput.addEventListener('input', () => {
+            events.emit(`${this.container.name}.address:change`, {
+                field: 'address',
+                value: this._addressInput.value
+            });
         });
     }
-    
+
+    selectPaymentMethod(method: PaymentMethod) {
+        this._paymentButtons.forEach(button => {
+            this.modifyClass(
+                button, 
+                'button_alt-active', 
+                button.name === method
+            );
+        });
+    }
+
+    set valid(value: boolean) {
+        this._submitButton.disabled = !value;
+    }
+
+    set errors(value: string) {
+        this._errors.textContent = value;
+    }
+
     set address(value: string) {
-        (this.container.elements.namedItem('address') as HTMLInputElement).value = value;
+        this._addressInput.value = value;
     }
 }
 
 export class OrderContacts extends Form<OrderContactFormData> {
-    constructor(container: HTMLFormElement, events: IEvents) {
+    protected _phoneInput: HTMLInputElement;
+    protected _emailInput: HTMLInputElement;
+    protected _submitButton: HTMLButtonElement;
+    protected _errors: HTMLElement;
+
+    constructor(container: HTMLFormElement, protected events: IEvents, private orderModel: OrderModel) {
         super(container, events);
+        
+        this._phoneInput = ensureElement<HTMLInputElement>('input[name="phone"]', container);
+        this._emailInput = ensureElement<HTMLInputElement>('input[name="email"]', container);
+        this._submitButton = ensureElement<HTMLButtonElement>('button[type="submit"]', container);
+        this._errors = ensureElement<HTMLElement>('.form__errors', container);
+
+        this._errors.textContent = '';
+        this._submitButton.disabled = true;
+    }
+
+    set errors(value: string) {
+        this._errors.textContent = value;
+    }
+
+    set valid(value: boolean) {
+        this._submitButton.disabled = !value;
     }
 
     set phone(value: string) {
-        (this.container.elements.namedItem('phone') as HTMLInputElement).value = value;
+        this._phoneInput.value = value;
     }
 
     set email(value: string) {
-        (this.container.elements.namedItem('email') as HTMLInputElement).value = value;
+        this._emailInput.value = value;
     }
 }
