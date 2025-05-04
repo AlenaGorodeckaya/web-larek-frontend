@@ -24,11 +24,6 @@ setProducts(products: IProduct[]) {
     this.emitChanges('preview:changed', product);
   }
 
-// Проверяет, находится ли товар в корзине
-  isProductInBasket(item: IProduct): boolean {
-    return false; // Реализация в CartModel
-  }
-
 // Возвращает текущий список продуктов
   get products(): IProduct[] {
     return this._products;

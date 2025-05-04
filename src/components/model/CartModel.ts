@@ -45,7 +45,6 @@ export class CartModel extends Model<IAppData> {
     addItem(item: IProduct) {
       if (!this.isItemInCart(item)) {
         this._items.push(item);
-        this.calculateTotals();
         this.updateCartState();
       }
     }
@@ -53,7 +52,6 @@ export class CartModel extends Model<IAppData> {
 // Удаляет товар из корзины.
     removeItem(id: string) {
       this._items = this._items.filter((product) => product.id !== id);
-      this.calculateTotals();
       this.updateCartState();
     }
   

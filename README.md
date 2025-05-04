@@ -77,9 +77,8 @@ emitChanges(event: string, payload?: object): void; // Уведомляет об
 
 Поля класса:
 ```
-- private _products: Product[] = []; // Массив карточек продуктов
-- private _preview: string | null = null; // ID выбранного для preview продукта
-- protected events: EventEmitter; // Механизм событий, при изменении данных
+- private _products: IProduct[] = []; // Массив товаров
+- private _preview: string | null = null; // ID товара для превью
 ```
 Геттеры:
 ```
@@ -89,22 +88,14 @@ emitChanges(event: string, payload?: object): void; // Уведомляет об
 
 Основные методы класса:
 
-`setProducts(products: Product[]): void`
+`setProducts(products: IProduct[]): void`
 - принимает готовые данные (загруженные через `AppPresenter`);  
 - обновляет массив `_products`;  
-- генерирует событие `products:changed`.  
+- генерирует событие `items:changed`.
 
-`getProductById(id: string): Product | undefined`
-- возвращает продукт по его ID;
-- если продукт не найден, возвращает undefined.
-
-`setPreview(productId: string): void`
+`setPreview(product: IProduct): void`
 - устанавливает продукт для предпросмотра;
-- генерирует событие preview:changed.
-
-`clearPreview(): void`
-- сбрасывает выбранный для предпросмотра продукт;
-- генерирует событие preview:changed.
+- генерирует событие `preview:changed`.
 
 ### `CartModel` 
 Отвечает за управление данными корзины покупочек.
@@ -113,93 +104,94 @@ emitChanges(event: string, payload?: object): void; // Уведомляет об
 
 Поля класса:
 ```
-- private _items: CartItem[] = []; // Товары в корзине (каждый товар в одном экземпляре)`
+- private _items: IProduct[] = []; // Товары в корзине (каждый товар в одном экземпляре)`
 - private _total: number = 0; // Общая стоимость
 - private _quantity: number = 0; // Количество товаров
 ```
 Геттеры:
 ```
-- get items(): CartItem[] // Возвращает текущее содержимое корзины
+- get items(): IProduct[] // Возвращает массив товаров
 - get total(): number // Возвращает общую стоимость
 - get quantity(): number // Возвращает количество товаров
 ```
+**Примечание**: Хотя CartModel хранит полные объекты товаров (IProduct[]), 
+CartItemView использует упрощенный интерфейс CartItem (только title и price) 
+для отображения элементов корзины.
 
 Основные методы класса:
 
-`addItem(product: Product): void`
+`addItem(item: IProduct): void`
 - проверяет наличие товара в корзине (по `id`);
-- если товар отсутствует — добавляет его в массив `_items` **в одном экземпляре**;
+- если товар отсутствует — добавляет его в массив `_items`;
 - пересчитывает итоги;
-- генерирует событие cart:changed.
+- генерирует событие `cart:changed`.
 
 `removeItem(productId: string): void`
 - удаляет товар из корзины;
 - пересчитывает итоги;
-- генерирует событие cart:changed.
+- генерирует событие `cart:changed`.
 
 `clearCart(): void`
 - полностью очищает корзину;
-- генерирует событие cart:changed.
+- генерирует событие `cart:changed`.
 
-`getItem(productId: string): CartItem | undefined`
-- возвращает товар из корзины по ID;
-- если не найден, возвращает undefined.
-
-`updateItemQuantity(productId: string, quantity: number): void`
-- изменяет количество товара (если quantity = 0, удаляет его).
-- пересчитывает итоги;
-- генерирует событие cart:changed.
+`isItemInCart(item: IProduct): boolean`
+- проверяет наличие товара в корзине по ID;
+- возвращает true если товар найден.
 
 `calculateTotals(): void`
 - пересчитывает общую стоимость и количество;
 - вызывается автоматически при изменении корзины.
 
+
 ### `OrderModel` 
 
 Отвечает за управление данными заказа.Обрабатывает валидацию и отправку заказа на сервер.
+
 Принимает:
 - events - экземпляр EventEmitter для инициации событий
 
 Поля класса:
 ```
- private _order: OrderData = {
-  payment: '',
-  email: '',
-  phone: '',
-  address: ''
+private _order: OrderData = {
+payment: '',
+email: '',
+phone: '',
+address: '',
+items: [],
+total: 0
 };
 private _errors: FormErrors = {};
-private _valid: boolean = false;
 ```
 Геттеры:
 ```
 - get data(): OrderData // Возвращает текущие данные заказа
 - get errors(): FormErrors // Возвращает ошибки валидации
-- get isValid(): boolean // Возвращает статус валидации
 ```
 
 Основные методы класса:
 
-`setField(field: keyof OrderData, value: string): void`
+``setField(field: keyof OrderData, value: string): void`
 - устанавливает значение поля заказа;
 - автоматически запускает валидацию;
-- генерирует событие order:changed.
+- генерирует событие `order:changed`.
 
-`validate(): boolean`
-- проверяет корректность всех данных заказа;
+`validateDelivery(): boolean`
+- проверяет корректность данных доставки (адрес и способ оплаты);
 - заполняет объект ошибок;
-- возвращает true если все данные валидны;
-- генерирует событие order:validation.
+- возвращает true если данные валидны.
 
-`validateField(field: keyof OrderData): void`
-- валидирует конкретное поле;
-- обновляет объект ошибок;
-- генерирует событие order:validation.
+`validateContacts(): boolean`
+- проверяет корректность контактных данных (email и телефон);
+- заполняет объект ошибок;
+- возвращает true если данные валидны.
 
 `clear(): void`
 - сбрасывает все данные заказа;
-- енерирует событие order:changed.
-- submit(): OrderData — возвращает данные заказа (без отправки на сервер).
+- генерирует событие `order:cleared`.
+
+`setItems(items: string[]): void`
+- устанавливает список ID товаров в заказе.
 
 ## View 
 Представления только отображают данные и взаимодействуют с пользователем. Данные хранятся в моделях.
@@ -211,27 +203,25 @@ private _valid: boolean = false;
 
 Конструктор:
 ```
-constructor(container: HTMLElement, actions?: CardActions)
+constructor(protected blockName: string, container: HTMLElement, action?: ICardAction)
 ```
-Методы:
-- set inCart(value: boolean) - меняет состояние кнопки;
-- update(data: Partial<Product>): void - обновляет данные карточки;
-- _handleButtonClick: () => void - обработчик клика по кнопке.
+Основные свойства:
+- `buttonText` - устанавливает текст кнопки
+- `category` - устанавливает категорию товара с соответствующим стилем
+- `price` - устанавливает цену товара ("Бесценно" если null)
 
 ### `Modal`
 Управляет отображением и поведением модальных окон в приложении.
 
-Наследование: Component<HTMLElement>
+Наследование: Component<IModalData>
 Конструктор:
 ```
-constructor(container: HTMLElement, events: EventEmitter)
+constructor(container: HTMLElement, events: IEvents)
 ```
 Методы:
-- open(): void - открыть модальное окно;
-- close(): void - закрыть модальное окно;
-- setContent(content: HTMLElement): void - Устанавливает содержимое модального окна;
-- _handleEscape: (evt: KeyboardEvent) => void - Обработчик закрытия по ESC;
-- _handleOverlayClick: (evt: MouseEvent) => void - Обработчик клика по оверлею.
+- `open()` - открыть модальное окно;
+- `close()` - закрыть модальное окно;
+- `set content` - установить содержимое модального окна.
 
 ### `CartItemView`
 Отображает один элемент корзины. Создается при каждом изменении корзины.
@@ -240,66 +230,78 @@ constructor(container: HTMLElement, events: EventEmitter)
 
 Конструктор:
 ```
-constructor(container: HTMLElement)
+constructor(container: HTMLElement, index: number, action?: ICardAction)
 ```
-Методы:
-- update(item: CartItem): void - обновляет отображение элемента.
+Свойства:
+- `title` - устанавливает название товара
+- `price` - устанавливает цену товара
+- `index` - устанавливает порядковый номер
 
 ### `CartView`
 Управляет отображением корзины покупочек.
 
-Наследование: Component<CartItem[]>
+Наследование: Component<ICartView>
+
+Конструктор:
+```
+constructor(container: HTMLElement, events: EventEmitter)
+```
+ММетоды:
+- `set items` - обновляет список товаров в корзине
+- `set total` - устанавливает общую сумму заказа
+- `toggleButton` - управляет состоянием кнопки оформления заказа
+
+### `OrderForm`
+#### `OrderAddress`
+Управляет формой ввода данных доставки.
+
+Наследование: Form<OrderDeliveryFormData>
+
+Конструктор:
+constructor(container: HTMLFormElement, events: EventEmitter)
+
+Методы:
+- `selectPaymentMethod` - выделяет выбранный способ оплаты
+- `set valid` - управляет состоянием кнопки "Далее"
+- `set errors` - отображает ошибки валидации
+
+#### `OrderContacts`
+Управляет формой ввода контактных данных.
+
+Наследование: Form<OrderContactFormData>
+
+Конструктор:
+constructor(container: HTMLFormElement, events: EventEmitter, orderModel: OrderModel)
+
+Методы:
+- `set valid` - управляет состоянием кнопки "Оплатить"
+- `set errors` - отображает ошибки валидации
+
+### `SuccessView`
+Управляет отображением сообщения об успешном заказе.
+
+Наследование: Component<ISuccessModal>
+
+Конструктор:
+```
+constructor(container: HTMLElement, actions: ISuccessModalActions)
+```
+Методы:
+- `set total` - устанавливает сумму заказа
+
+### `PageView`
+Управляет основными элементами страницы.
+
+Наследование: Component<IPage>
 
 Конструктор:
 ```
 constructor(container: HTMLElement, events: EventEmitter)
 ```
 Методы:
-- update(items: CartItem[]): void - обновляет содержимое корзины (создает CartItemView для каждого элемента)
-- _updateTotal(sum: number): void - обновляет общую сумму;
-- _handleSubmit: () => void - обработчик оформления заказа.
-
-### `OrderForm`
-Управляет формой оформления заказов.
-
-Наследование: Component<OrderData>
-
-Конструктор:
-```
-constructor(container: HTMLFormElement, events: EventEmitter)
-```
-Методы:
-- set errors(value: FormErrors) - отображает ошибки валидации;
-- set valid(value: boolean) - управляет состоянием кнопки;
-- _handleInputChange: (evt: Event) => void - обработчик изменений (отправляет данные в модель).
-
-### `SuccessView`
-Управляет формой сообщения об успешном заказе.
-
-Наследование: Component<OrderResult>
-
-Конструктор:
-```
-constructor(container: HTMLElement, actions: SuccessActions)
-```
-Методы:
-- set total(value: number) - устанавливает сумму заказа;
-- _handleClose: () => void - обработчик закрытия.
-
-### `PageView`
-Управляет основными элементами страницы.
-
-Наследование: Component<void>
-
-Конструктор:
-```
-cconstructor(container: HTMLElement, events: EventEmitter)
-```
-Методы:
-- set counter(value: number) - обновляет счетчик;
-- set catalog(items: HTMLElement[]) - обновляет каталог;
-- set locked(value: boolean) - блокирует страницу;
-- _handleBasketClick: () => void - обработчик корзины.
+- `set counter` - обновляет счетчик товаров в корзине
+- `set catalog` - обновляет каталог товаров
+- `set locked` - блокирует/разблокирует страницу
 
 ## Presenter 
 ### `AppPresenter`
@@ -346,9 +348,9 @@ cconstructor(container: HTMLElement, events: EventEmitter)
 - Генерируется: OrderData при изменении полей формы.
 - Обработчик: OrderForm отправляет данные в OrderModel через setField().
 
-`order:validation` - результаты валидации заказа.
-- Генерируется: OrderData при проверке данных.
-- Обработчик: показывает ошибки в OrderForm.
+`counter:changed` - изменение количества товаров в корзине.
+- Генерируется: CartModel при обновлении корзины.
+- Обработчик: обновляет счетчик в PageView.
 
 **События пользовательского интерфейса:**
 
@@ -356,30 +358,39 @@ cconstructor(container: HTMLElement, events: EventEmitter)
 - Генерируется: ProductCard при клике.
 - Обработчик: вызывает ProductData.setPreview().
 
-`card:add` - добавление товара в корзину.
-- Генерируется: ProductCard при клике "В корзину".
-- Обработчик: вызывает CartData.addItem().
-
-`basket:open` - открытие корзины.
+`cart:open` - открытие корзины.
 - Генерируется: PageView при клике на иконку корзины.
 - Обработчик: открывает CartView в Modal.
 
-`order:submit` - отправка заказа.
-- Генерируется: OrderForm при подтверждении.
-- Обработчик: вызывает OrderData.submit().
+`order:open` - открытие формы заказа.
+- Генерируется: CartView при клике "Оформить".
+- Обработчик: открывает OrderAddress в Modal.
 
-`modal:close`- закрытие модального окна.
-- Генерируется: Modal при закрытии.
-- Обработчик: сбрасывает состояние связанных моделей.
+`order:submit` - отправка формы доставки.
+- Генерируется: OrderAddress при успешной валидации.
+- Обработчик: открывает OrderContacts в Modal.
+
+`contacts:submit` - отправка контактных данных.
+- Генерируется: OrderContacts при успешной валидации.
+- Обработчик: отправляет заказ на сервер, открывает SuccessView.
+
+`modal:open/close` - открытие/закрытие модального окна.
+- Генерируется: Modal.
+- Обработчик: блокирует/разблокирует страницу.
 
 **Последовательность событий при оформлении заказа:**
-1. Пользователь нажимает "Оформить заказ" в CartView → генерируется order:open.
-2. Открывается Modal с OrderForm.
-3. Пользователь заполняет форму → генерируются order:change для каждого поля.
-4. При изменении поля вызывается OrderData.setField().
-5. OrderData валидирует данные и генерирует order:validation.
-6. При успешной валидации активируется кнопка подтверждения.
-7. Пользователь подтверждает заказ и далее генерируется order:submit.
-8. AppPresenter отправляет данные на сервер через API.
-9. При успехе генерируется order:success, открывается SuccessView.
-10. Корзина очищается через CartData.clearCart().
+1. Пользователь нажимает "Оформить заказ" в `CartView` → генерируется order:open.
+2. Открывается `Modal` с `OrderAddress`.
+3. Пользователь заполняет форму → генерируются события `order.payment:change` и `order.address:change`.
+4. При изменении поля вызывается `OrderModel.setField()`.
+5. OrderModel валидирует данные через `validateDelivery()`.
+6. При успешной валидации активируется кнопка "Далее".
+7. Пользователь нажимает "Далее" → генерируется `order:submit`.
+8. Открывается `OrderContacts`.
+9. Пользователь заполняет контакты → генерируются `contacts.phone:change` и `contacts.email:change`.
+10. OrderModel валидирует данные через `validateContacts()`.
+11. При успешной валидации активируется кнопка "Оплатить".
+12. Пользователь нажимает "Оплатить" → генерируется `contacts:submit`.
+13. AppPresenter отправляет данные на сервер через API.
+14. При успехе открывается `SuccessView`.
+15. Корзина очищается через `CartModel.clearCart()`.

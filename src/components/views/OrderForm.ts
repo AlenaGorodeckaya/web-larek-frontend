@@ -98,14 +98,6 @@ export class OrderAddress extends Form<OrderDeliveryFormData> {
         });
     }
 
-    set valid(value: boolean) {
-        this._submitButton.disabled = !value;
-    }
-
-    set errors(value: string) {
-        this._errors.textContent = value;
-    }
-
     set address(value: string) {
         this._addressInput.value = value;
     }
@@ -127,14 +119,6 @@ export class OrderContacts extends Form<OrderContactFormData> {
 
         this._errors.textContent = '';
         this._submitButton.disabled = true;
-    }
-
-    set errors(value: string) {
-        this._errors.textContent = value;
-    }
-
-    set valid(value: boolean) {
-        this._submitButton.disabled = !value;
     }
 
     set phone(value: string) {
